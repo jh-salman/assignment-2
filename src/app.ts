@@ -1,6 +1,8 @@
 import express, { Request, Response } from "express";
 import { initDB } from "./config/db";
 import { userRoutes } from "./modules/user/user.routes";
+import { authRouter } from "./modules/auth/auth.routes";
+import { auth } from "./middlewere/auth";
 
 export const app = express();
 //init db
@@ -18,6 +20,10 @@ app.get("/", (req :Request, res: Response)=>{
 })
 app.use("/api/v1/auth/signup", userRoutes);
 
-//login route 
+// update signle user only admin and owner
+app.use("/api/v1/users", auth("admin", "customer"), userRoutes)
 
-app.use("/api/v1/users", userRoutes)
+
+// Auth router
+
+app.use("/api/v1/auth/", authRouter )
