@@ -77,6 +77,7 @@ const getAllVehicles = async () => {
 }
 
 const updateVehicleStatus = async (vehicleId: string, status: string) => {
+    
   const result = await pool.query(
     `
     UPDATE vehicles

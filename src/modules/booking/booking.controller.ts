@@ -101,7 +101,7 @@ const getAllBookings = async (req: Request, res: Response) => {
 
         const result = await bookingServices.getAllBookings();
         const rows = result.rows;
-   
+
         if (role === "admin") {
             const adminData = rows.map((b: any) => ({
                 id: b.id,
@@ -128,7 +128,7 @@ const getAllBookings = async (req: Request, res: Response) => {
             });
         }
 
-      
+
         if (role === "customer") {
             const ownBookings = rows.filter((b: any) => b.customer_id === userId);
             if (ownBookings.length === 0) {
@@ -160,7 +160,7 @@ const getAllBookings = async (req: Request, res: Response) => {
             });
         }
 
-        
+
         return res.status(403).json({
             success: false,
             message: "Forbidden: you don't have permission",
@@ -175,12 +175,108 @@ const getAllBookings = async (req: Request, res: Response) => {
 };
 // Update booking status based on user role and business rules
 const updateBooking = async (req: Request, res: Response) => {
+    try {
+        const bookingId = req.params.bookingId as string;
+        const { status } = req.body;
 
-}
+        const loggedUser = req.user as any;
+        const role = loggedUser.role;
+        const userId = loggedUser.id;
+
+        // Check booking exists
+        const existingResult = await bookingServices.getSingleBooking(bookingId);
+        if (existingResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        const booking = existingResult.rows[0];
+
+       
+
+        // customer ==> only cancel own booking
+        if (role === "customer") {
+            if (booking.customer_id !== userId) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Forbidden: you can update only your booking",
+                });
+            }
+
+            if (status !== "cancelled") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Customer can only cancel booking",
+                });
+            }
+
+            // update booking
+            const updated = await bookingServices.updateBookingStatus(
+                bookingId,
+                "cancelled"
+            );
+
+            // vehicle available
+            await vehicleServices.updateVehicleStatus(
+                booking.vehicle_id.toString(),
+                "available"
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Booking cancelled successfully",
+                data: updated.rows[0],
+            });
+        }
+
+        // admin => only return booking
+        if (role === "admin") {
+            if (status !== "returned") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Admin can only mark booking as returned",
+                });
+            }
+
+            const updated = await bookingServices.updateBookingStatus(
+                bookingId,
+                "returned"
+            );
+
+            await vehicleServices.updateVehicleStatus(
+                booking.vehicle_id,
+                "available"
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Booking marked as returned. Vehicle is now available",
+                data: {
+                    ...updated.rows[0],
+                    vehicle: { availability_status: "available" },
+                },
+            });
+        }
+
+        
+        return res.status(403).json({
+            success: false,
+            message: "Forbidden: you don't have permission",
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 
 
 export const bookingController = {
     createBooking,
     getAllBookings,
-    updateBooking
+    updateBooking,
+
 }
