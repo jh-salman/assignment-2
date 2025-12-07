@@ -93,10 +93,86 @@ const createBooking = async (req: Request, res: Response) => {
 
 }
 //Admin sees all, Customer sees own
-const getAllBooking = async (req: Request, res: Response) => {
+const getAllBookings = async (req: Request, res: Response) => {
+    try {
+        const loggedUser = req.user as Record<string, any>;
+        const role = loggedUser.role;
+        const userId = loggedUser.id;
 
-}
+        const result = await bookingServices.getAllBookings();
+        const rows = result.rows;
+   
+        if (role === "admin") {
+            const adminData = rows.map((b: any) => ({
+                id: b.id,
+                customer_id: b.customer_id,
+                vehicle_id: b.vehicle_id,
+                rent_start_date: b.rent_start_date,
+                rent_end_date: b.rent_end_date,
+                total_price: b.total_price,
+                status: b.status,
+                customer: {
+                    name: b.customer_name,
+                    email: b.customer_email,
+                },
+                vehicle: {
+                    vehicle_name: b.vehicle_name,
+                    registration_number: b.registration_number,
+                },
+            }));
 
+            return res.status(200).json({
+                success: true,
+                message: "Bookings retrieved successfully",
+                data: adminData,
+            });
+        }
+
+      
+        if (role === "customer") {
+            const ownBookings = rows.filter((b: any) => b.customer_id === userId);
+            if (ownBookings.length === 0) {
+                return res.status(200).json({
+                    success: true,
+                    message: "No bookings found for this customer",
+                    data: [],
+                });
+            }
+
+            const customerData = ownBookings.map((b: any) => ({
+                id: b.id,
+                vehicle_id: b.vehicle_id,
+                rent_start_date: b.rent_start_date,
+                rent_end_date: b.rent_end_date,
+                total_price: b.total_price,
+                status: b.status,
+                vehicle: {
+                    vehicle_name: b.vehicle_name,
+                    registration_number: b.registration_number,
+                    type: b.type,
+                },
+            }));
+
+            return res.status(200).json({
+                success: true,
+                message: "Your bookings retrieved successfully",
+                data: customerData,
+            });
+        }
+
+        
+        return res.status(403).json({
+            success: false,
+            message: "Forbidden: you don't have permission",
+        });
+
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 // Update booking status based on user role and business rules
 const updateBooking = async (req: Request, res: Response) => {
 
@@ -105,6 +181,6 @@ const updateBooking = async (req: Request, res: Response) => {
 
 export const bookingController = {
     createBooking,
-    getAllBooking,
+    getAllBookings,
     updateBooking
 }

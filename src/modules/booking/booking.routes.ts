@@ -5,7 +5,7 @@ import { auth } from "../../middlewere/auth";
 const router = Router()
 
 router.post("/",auth("admin", "customer"), bookingController.createBooking)
-router.get("/", bookingController.getAllBooking)
+router.get("/", auth("admin","customer"), bookingController.getAllBookings)
 router.put("/:bookingId", bookingController.updateBooking)
 
 

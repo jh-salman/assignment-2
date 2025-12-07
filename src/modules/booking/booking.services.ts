@@ -16,7 +16,9 @@ const createBooking = async(payload:Record<string, unknown>, totalPrice : number
 }
 
 //Admin sees all, Customer sees own
-const getAllBooking = async()=>{
+const getAllBookings = async()=>{
+const result = await pool.query(`SELECT * FROM bookings`);
+return result
 
 }
 
@@ -32,6 +34,6 @@ const updateBooking = async()=>{
 
 export const bookingServices = {
     createBooking,
-    getAllBooking,
+    getAllBookings,
     updateBooking
 }
