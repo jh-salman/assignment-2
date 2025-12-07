@@ -6,6 +6,10 @@ const router = Router()
 
 
 router.post("/", auth("admin"), vehicleController.createVehicle)
+router.get("/:vehicleId", vehicleController.getSingleVehicle)
+router.put("/:vehicleId", auth("admin"), vehicleController.updateVehicle)
+router.delete("/:vehicleId", auth("admin"), vehicleController.deleteVehicle)
+router.get("/", vehicleController.getAllVehicles)
 
 
 
