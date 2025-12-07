@@ -1,11 +1,11 @@
-import {Pool} from "pg";
+import { Pool } from "pg";
 import { config } from ".";
 
 export const pool = new Pool({
-    connectionString:`${config.connectionDb}`
+    connectionString: `${config.connectionDb}`
 })
 
-export const initDB= async()=>{
+export const initDB = async () => {
 
 
     await pool.query(`
@@ -21,17 +21,18 @@ export const initDB= async()=>{
         )`)
 
     await pool.query(`
-        CREATE TABLE IF NOT EXISTS vehicles(
+      CREATE TABLE IF NOT EXISTS vehicles(
         id SERIAL PRIMARY KEY,
         vehicle_name VARCHAR(150) NOT NULL,
         type VARCHAR(30) NOT NULL,
         registration_number VARCHAR(200),
         daily_rent_price NUMERIC(10,2) NOT NULL,
-        availability_status BOOLEAN DEFAULT TRUE,
+        availability_status VARCHAR(50) DEFAULT 'available'
+        CHECK (availability_status IN ('available','booked','maintenance')),
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
-        
-        )`)
+      );
+    `);
 
 
 }

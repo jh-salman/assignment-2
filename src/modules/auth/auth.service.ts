@@ -19,6 +19,8 @@ const signinUser = async (email: string, password: string)=>{
         throw new Error("Invalid email or password");
     }
 
+    
+
     const token = jwt.sign(
         {id:user.id,name:user.name,email:user.email,phone:user.phone,role:user.role}, 
         config.jwtSecret as string,
