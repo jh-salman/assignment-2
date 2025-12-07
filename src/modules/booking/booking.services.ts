@@ -42,7 +42,17 @@ const updateBookingStatus = async (bookingId: string, status: string) => {
 
     return result;
 };
+const autoReturnExpiredBookings = async () => {
+  const result = await pool.query(`
+    UPDATE bookings
+    SET status='returned', updated_at=NOW()
+    WHERE status='active'
+      AND rent_end_date < CURRENT_DATE
+    RETURNING vehicle_id;
+  `);
 
+  return result; 
+};
 
 
 
@@ -53,5 +63,6 @@ export const bookingServices = {
     createBooking,
     getAllBookings,
     getSingleBooking,
-    updateBookingStatus
+    updateBookingStatus,
+    autoReturnExpiredBookings
 }

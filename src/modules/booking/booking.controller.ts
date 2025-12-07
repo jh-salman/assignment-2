@@ -95,12 +95,19 @@ const createBooking = async (req: Request, res: Response) => {
 //Admin sees all, Customer sees own
 const getAllBookings = async (req: Request, res: Response) => {
     try {
+        
         const loggedUser = req.user as Record<string, any>;
         const role = loggedUser.role;
         const userId = loggedUser.id;
 
         const result = await bookingServices.getAllBookings();
         const rows = result.rows;
+
+        const expired = await bookingServices.autoReturnExpiredBookings();
+
+        for (const row of expired.rows) {
+            await vehicleServices.updateVehicleStatus(row.vehicle_id.toString(), "available");
+        }
 
         if (role === "admin") {
             const adminData = rows.map((b: any) => ({
@@ -194,14 +201,24 @@ const updateBooking = async (req: Request, res: Response) => {
 
         const booking = existingResult.rows[0];
 
-       
+
 
         // customer ==> only cancel own booking
         if (role === "customer") {
-            if (booking.customer_id !== userId) {
-                return res.status(403).json({
+            if (status !== "cancelled") {
+                return res.status(400).json({
                     success: false,
-                    message: "Forbidden: you can update only your booking",
+                    message: "Customer can only cancel booking",
+                });
+            }
+
+            const today = new Date();
+            const startDate = new Date(booking.rent_start_date);
+
+            if (today >= startDate) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Booking cannot be cancelled after start date",
                 });
             }
 
@@ -260,7 +277,7 @@ const updateBooking = async (req: Request, res: Response) => {
             });
         }
 
-        
+
         return res.status(403).json({
             success: false,
             message: "Forbidden: you don't have permission",
